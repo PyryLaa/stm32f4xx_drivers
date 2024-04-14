@@ -13,7 +13,7 @@
  *
  * @brief             - This function initializes the GPIOx pin for use
  *
- * @param[in]         - Handle for the GPIOx pin
+ * @param[in]         - Address of the handle for the GPIOx pin
  * @param[in]         -
  * @param[in]         -
  *
@@ -166,6 +166,7 @@ void GPIO_PClkCntl(GPIO_Reg_t* pGPIOx, uint8_t state){
 }
 
 
+
 /*
  *
  * Read & write
@@ -187,7 +188,9 @@ void GPIO_PClkCntl(GPIO_Reg_t* pGPIOx, uint8_t state){
 
  */
 uint8_t GPIO_ReadPinIn(GPIO_Reg_t* pGPIOx, uint8_t pin){
-	return 0;
+	uint8_t data = 0;
+	data = (uint8_t)((pGPIOx -> IDR >> pin) & 0x00000001);
+	return data;
 }
 
 /*********************************************************************
@@ -205,7 +208,9 @@ uint8_t GPIO_ReadPinIn(GPIO_Reg_t* pGPIOx, uint8_t pin){
 
  */
 uint16_t GPIO_ReadPortIn(GPIO_Reg_t* pGPIOx){
-	return 0;
+	uint16_t data = 0;
+	data = (uint16_t)(pGPIOx -> IDR);
+	return data;
 }
 
 /*********************************************************************
@@ -223,7 +228,11 @@ uint16_t GPIO_ReadPortIn(GPIO_Reg_t* pGPIOx){
 
  */
 void GPIO_WriteOutPin(GPIO_Reg_t* pGPIOx, uint8_t pin, uint8_t data){
-
+	if(data == GPIO_PIN_SET){
+		pGPIOx -> ODR |= (1 << pin);
+	}else if(data == GPIO_PIN_RESET){
+		pGPIOx -> ODR &= ~(1 << pin);
+	}
 }
 
 /*********************************************************************
@@ -241,7 +250,7 @@ void GPIO_WriteOutPin(GPIO_Reg_t* pGPIOx, uint8_t pin, uint8_t data){
 
  */
 void GPIO_WriteOutPort(GPIO_Reg_t* pGPIOx, uint16_t data){
-
+	pGPIOx -> ODR = data;
 }
 
 /*********************************************************************
@@ -259,7 +268,7 @@ void GPIO_WriteOutPort(GPIO_Reg_t* pGPIOx, uint16_t data){
 
  */
 void GPIO_ToggleOutPin(GPIO_Reg_t* pGPIOx, uint8_t pin){
-
+	pGPIOx -> ODR ^= (1 << pin);
 }
 
 
