@@ -1,6 +1,6 @@
-#This repo holds my drivers for the STM32F407G-DISC1 board, following [this Udemy course](https://www.udemy.com/course/mastering-microcontroller-with-peripheral-driver-development)#
+# This repo holds my drivers for the STM32F407G-DISC1 board, following [this Udemy course](https://www.udemy.com/course/mastering-microcontroller-with-peripheral-driver-development)
 
-##GPIO##
+## GPIO
 Usage of GPIO drivers:
 1. Create a `GPIO_Handle_t` struct
 2. `GPIO_Handle_t.pGPIOx` is a struct holding the base address for the GPIO port used (GPIOA, GPIOB, etc)
