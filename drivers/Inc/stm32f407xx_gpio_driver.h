@@ -6,9 +6,7 @@
 
 
 /*
- *
  * Config struct for GPIOx pin
- *
  */
 
 typedef struct{
@@ -21,9 +19,7 @@ typedef struct{
 }GPIO_PinCfg_t;
 
 /*
- *
  * Handle struct for GPIOx pin
- *
  */
 
 typedef struct{
@@ -33,9 +29,7 @@ typedef struct{
 
 
 /*@GPIO_PIN_NUMBERS
- *
  * GPIO pin number macros
- *
  */
 #define GPIO_PIN_0			0
 #define GPIO_PIN_1			1
@@ -55,9 +49,7 @@ typedef struct{
 #define GPIO_PIN_15			15
 
 /*@GPIO_PIN_MODES
- *
  * GPIO input mode macros
- *
  */
 #define GPIO_MODE_IN 		0 //Input mode (reset)
 #define GPIO_MODE_OUT 		1 //Output mode
@@ -68,17 +60,13 @@ typedef struct{
 #define GPIO_MODE_IT_RFT	6 //Interrupt both edges
 
 /*@GPIO_PIN_OUT_TYPES
- *
  * GPIO output type macros
- *
  */
 #define GPIO_OUT_TYPE_PP	0 //Push-pull (reset)
 #define GPIO_OUT_TYPE_OD 	1 //Open drain
 
 /*@GPIO_PIN_SPEED
- *
  * GPIO output speed macros
- *
  */
 #define GPIO_OUT_SPD_LOW	0 //Low speed
 #define GPIO_OUT_SPD_MED	1 //Medium speed
@@ -86,18 +74,14 @@ typedef struct{
 #define GPIO_OUT_SPD_VHIGH 	3 //Very high speed
 
 /*@GPIO_PUPD
- *
  * GPIO pull-up/down macros
- *
  */
 #define GPIO_PUPD_DI		0 //No pull-up/pull-down
 #define GPIO_PUPD_PU		1 //Pull-up
 #define GPIO_PUPD_PD		2 //Pull-down
 
 /*
- *
  * Driver API prototypes
- *
  */
 
 //Init, de-init
@@ -115,7 +99,8 @@ void GPIO_WriteOutPort(GPIO_Reg_t* pGPIOx, uint16_t data);
 void GPIO_ToggleOutPin(GPIO_Reg_t* pGPIOx, uint8_t pin);
 
 //IRQ
-void GPIO_IRQCfg(uint8_t IRQ_num, uint8_t IRQ_priority, uint8_t state);
+void GPIO_IRQCfg(uint8_t IRQ_num, uint8_t state);
+void GPIO_IRQ_PriorityCfg(uint8_t IRQ_num, uint8_t IRQ_priority);
 void GPIO_IRQHandle(uint8_t pin);
 
 #endif /* INC_STM32F407XX_GPIO_DRIVER_H_ */

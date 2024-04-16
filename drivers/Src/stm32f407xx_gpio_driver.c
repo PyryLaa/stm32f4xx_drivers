@@ -31,7 +31,27 @@ void GPIO_Init(GPIO_Handle_t* pGPIOHandle){
 		pGPIOHandle -> pGPIOx -> MODER &= ~(3 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
 		pGPIOHandle -> pGPIOx -> MODER |= temp;
 	}else{
-		//Interrupt modes
+		if(pGPIOHandle -> GPIO_PinCfg.GPIO_PinMode == GPIO_MODE_IT_FT){ //Interrupt on falling edge
+			EXTI -> FTSR |= (1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Enable the falling edge trigger interrupt for the given line
+			EXTI -> RTSR &= ~(1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Make sure the rising edge trigger is disabled
+
+		}else if(pGPIOHandle -> GPIO_PinCfg.GPIO_PinMode == GPIO_MODE_IT_RT){ //Interrupt on rising edge
+			EXTI -> RTSR |= (1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Enable the rising edge trigger interrupt for the given pin
+			EXTI -> FTSR &= ~(1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Make sure the falling edge trigger is disabled
+
+		}else if(pGPIOHandle -> GPIO_PinCfg.GPIO_PinMode == GPIO_MODE_IT_RFT){ //Interrupt on both edges
+			EXTI -> RTSR |= (1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Enable the rising edge trigger interrupt for the given line
+			EXTI -> FTSR |= (1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum); //Enable the falling edge trigger interrupt for the given line
+		}
+		//Choose the right EXTI line in SYSCFG
+		uint8_t temp1 = pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum / 4; //Used to choose the right EXTICR register from the array
+		uint8_t temp2 = pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum % 4; //Used to choose the right bitfield from the chosen EXTICR
+		uint8_t port = GPIO_BASE_TO_PORT(pGPIOHandle->pGPIOx);
+
+		SYSCFG_PCLK_EN();
+		SYSCFG -> EXTICR[temp1] = port << (temp2 * 4); //One bitfield is 4 bits in EXTICR
+		//Enable the exti interrupt delivery using IMR register
+		EXTI -> IMR |= (1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
 	}
 
 	//Pin speed
@@ -282,21 +302,64 @@ void GPIO_ToggleOutPin(GPIO_Reg_t* pGPIOx, uint8_t pin){
 /*********************************************************************
  * @fn      		  - GPIO_IRQCfg
  *
- * @brief             - This function configures the interrupt behavior for the GPIO pin
+ * @brief             - This function enables or disables the given interrupt in the M4 NVIC registers
  *
  * @param[in]         - IRQ number
- * @param[in]         -	Priority of the IRQ
- * @param[in]         - ENABLE or DISABLE macros
+ * @param[in]         -	ENABLE or DISABLE macros
+ * @param[in]         -
  *
  * @return            -  none
  *
  * @Note              -  none
 
  */
-void GPIO_IRQCfg(uint8_t IRQ_num, uint8_t IRQ_priority, uint8_t state){
+void GPIO_IRQCfg(uint8_t IRQ_num, uint8_t state){
+	if(state == ENABLE){
+		if(IRQ_num <= 31){
+			*NVIC_ISER0 = (1 << IRQ_num); //Enable the interrupt in the NVIC
 
+		}else if(IRQ_num >= 32 && IRQ_num < 64){
+			*NVIC_ISER1 = (1 << IRQ_num % 32);
+
+		}
+		else if(IRQ_num >= 64 && IRQ_num < 96){
+			*NVIC_ISER2 = (1 << IRQ_num % 64);
+		}
+	}else if(state == ENABLE){
+		if(IRQ_num <= 31){
+			*NVIC_ICER0 = (1 << IRQ_num); //Disable the interrupt in the NVIC
+
+		}else if(IRQ_num >= 32 && IRQ_num < 64){
+			*NVIC_ICER1 = (1 << IRQ_num % 32);
+
+		}
+		else if(IRQ_num >= 64 && IRQ_num < 96){
+			*NVIC_ICER2 = (1 << IRQ_num % 64);
+		}
+	}
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_IRQ_PriorityCfg
+ *
+ * @brief             - This function configures the priority of the given interrupt in the M4 NVIC registers
+ *
+ * @param[in]         - IRQ_priority
+ * @param[in]         -
+ * @param[in]         -
+ *
+ * @return            -  none
+ *
+ * @Note              -  none
+
+ */
+void GPIO_IRQ_PriorityCfg(uint8_t IRQ_num, uint8_t IRQ_priority){
+	uint8_t int_reg = IRQ_num / 4; //Number of the IPR register to be used
+	uint8_t int_field = IRQ_num % 4; //Starting position of the bitfield used in the specified IPR register
+	uint8_t shift_amount = (8 * int_field) + (8 - PR_BITS_IMPLEMENTED);
+
+	*(NVIC_IPR0 + int_reg) |= (IRQ_priority << (shift_amount));
+}
 /*********************************************************************
  * @fn      		  - GPIO_IRQHandle
  *

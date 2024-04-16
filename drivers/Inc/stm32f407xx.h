@@ -3,6 +3,36 @@
 
 #include <stdint.h>
 
+/*******************************START: Processor specific definitions*****************************************************/
+/*
+ * ARM Cortex M4 CPU NVIC ISERx register addresses
+ */
+
+//For STM32F407 only 81 interrupts are maskable, so ISER0-ISER3 are the only ones needed
+#define NVIC_ISER0				((volatile uint32_t*) 0xE000E100)
+#define NVIC_ISER1				((volatile uint32_t*) 0xE000E104)
+#define NVIC_ISER2				((volatile uint32_t*) 0xE000E108)
+
+
+/*
+ * ARM Cortex M4 CPU NVIC ICERx register addresses
+ */
+#define NVIC_ICER0				((volatile uint32_t*) 0xE000E180)
+#define NVIC_ICER1				((volatile uint32_t*) 0xE000E184)
+#define NVIC_ICER2				((volatile uint32_t*) 0xE000E188)
+
+/*
+ * ARM Cortex M4 CPU NVIC IPRx register addresses
+ */
+#define NVIC_IPR0				((volatile uint32_t*) 0xE000E400)
+
+/*******************************END: Processor specific definitions*****************************************************/
+
+/*******************************START: MCU specific definitions*****************************************************/
+
+//
+#define PR_BITS_IMPLEMENTED		4 					//Priority bits implemented in the STM32F407
+
 //Memory base addresses
 #define FLASH_BASEADDR 			0x08000000U 		//Base address for the flash memory
 #define SRAM1_BASEADDR			0x20000000U 		//Base address for the sram1 memory, 112KB
@@ -19,9 +49,7 @@
 
 
 /*
- *
  * Peripheral bus base addresses
- *
  */
 
 //AHB1 bus, for every peripheral, address is AHB1PERIPH_BASEADDR + offset
@@ -70,22 +98,20 @@
 
 
 /*
- *
  * Peripheral register structs
- *
  */
 
 //GPIOx
 typedef struct{
-	volatile uint32_t MODER;
-	volatile uint32_t OTYPER;
-	volatile uint32_t OSPEEDR;
-	volatile uint32_t PUPDR;
-	volatile uint32_t IDR;
-	volatile uint32_t ODR;
-	volatile uint32_t BSRR;
-	volatile uint32_t LCKR;
-	volatile uint32_t AFR[2];
+	volatile uint32_t MODER;		//Offset 0x00
+	volatile uint32_t OTYPER;		//Offset 0x04
+	volatile uint32_t OSPEEDR;		//Offset 0x08
+	volatile uint32_t PUPDR;		//Offset 0x0C
+	volatile uint32_t IDR;			//Offset 0x10
+	volatile uint32_t ODR;			//Offset 0x14
+	volatile uint32_t BSRR;			//Offset 0x18
+	volatile uint32_t LCKR;			//Offset 0x1C
+	volatile uint32_t AFR[2];		//Offset 0x20 & 0x24
 }GPIO_Reg_t;
 
 //RCC
@@ -122,11 +148,27 @@ typedef struct{
     volatile uint32_t PLLI2SCFGR;	//Offset 0x84
 }RCC_Reg_t;
 
+//EXTI
+typedef struct{
+	volatile uint32_t IMR;			//Offset 0x00
+	volatile uint32_t EMR;			//Offset 0x04
+	volatile uint32_t RTSR;			//Offset 0x08
+	volatile uint32_t FTSR;			//Offset 0x0C
+	volatile uint32_t SWIER;		//Offset 0x10
+	volatile uint32_t PR;			//Offset 0x14
+}EXTI_Reg_t;
+
+//SYSCFG
+typedef struct{
+	volatile uint32_t MEMRMP;		//Offset 0x00
+	volatile uint32_t PMC;			//Offset 0x04
+	volatile uint32_t EXTICR[4];	//Offset 0x08 - 0x14
+			 uint32_t RESERVED[2];	//Offset 0x18 & 0x1C
+	volatile uint32_t CMPCR;		//Offset 0x20
+}SYSCFG_Reg_t;
 
 /*
- *
  * Peripheral definitions
- *
  */
 
 //GPIOx
@@ -143,11 +185,14 @@ typedef struct{
 //RCC
 #define RCC						 ((RCC_Reg_t*)RCC_BASEADDR)
 
+//EXTI
+#define EXTI					 ((EXTI_Reg_t*)EXTI_BASEADDR)
+
+//SYSCFG
+#define SYSCFG					 ((SYSCFG_Reg_t*)SYSCFG_BASEADDR)
 
 /*
- *
  * Clock enable macros
- *
  */
 
 //Clock enable macros for GPIOx
@@ -183,9 +228,7 @@ typedef struct{
 #define SYSCFG_PCLK_EN()		 (RCC->APB2ENR |= (1 << 14))
 
 /*
- *
  * Clock disable macros
- *
  */
 
 //Clock disable macros for GPIOx
@@ -221,9 +264,7 @@ typedef struct{
 #define SYSCFG_PCLK_DI()		 (RCC->APB2ENR &= ~(1 << 14))
 
 /*
- *
  * GPIOx reset macros
- *
  */
 #define GPIOA_REG_RESET()		 do{(RCC->AHB1RSTR |= (1 << 0)); (RCC->AHB1RSTR &= ~(1 << 0));}while(0)
 #define GPIOB_REG_RESET()		 do{(RCC->AHB1RSTR |= (1 << 1)); (RCC->AHB1RSTR &= ~(1 << 1));}while(0)
@@ -236,9 +277,7 @@ typedef struct{
 #define GPIOI_REG_RESET()		 do{(RCC->AHB1RSTR |= (1 << 8)); (RCC->AHB1RSTR &= ~(1 << 8));}while(0)
 
 /*
- *
  * Generics
- *
  */
 #define ENABLE 						 1
 #define DISABLE 					 0
@@ -247,6 +286,26 @@ typedef struct{
 #define GPIO_PIN_SET				 SET
 #define GPIO_PIN_RESET				 RESET
 
+#define GPIO_BASE_TO_PORT(x)		 ((x == GPIOA) ? 0:\
+									  (x == GPIOB) ? 1:\
+									  (x == GPIOC) ? 2:\
+									  (x == GPIOD) ? 3:\
+									  (x == GPIOE) ? 4:\
+									  (x == GPIOF) ? 5:\
+									  (x == GPIOG) ? 6:\
+									  (x == GPIOH) ? 7:\
+									  (x == GPIOI) ? 8:0)
+
+//IRQ numbers for the STM32F407
+#define IRQ_NUM_EXTI0				 6
+#define IRQ_NUM_EXTI1				 7
+#define IRQ_NUM_EXTI2				 8
+#define IRQ_NUM_EXTI3				 9
+#define IRQ_NUM_EXTI4				 10
+#define IRQ_NUM_EXTI9_5				 23
+#define IRQ_NUM_EXTI15_10			 40
+
+/*******************************END: MCU specific definitions*****************************************************/
 #include "stm32f407xx_gpio_driver.h"
 
 #endif /* INC_STM32F407XX_H_ */
