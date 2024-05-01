@@ -375,5 +375,8 @@ void GPIO_IRQ_PriorityCfg(uint8_t IRQ_num, uint8_t IRQ_priority){
 
  */
 void GPIO_IRQHandle(uint8_t pin){
-
+	//Clear the pending IRQ request register in EXTI for the pin that had the interrupt happen
+	if(EXTI -> PR & (1 << pin)){
+		EXTI -> PR |= (1 << pin);
+	}
 }
