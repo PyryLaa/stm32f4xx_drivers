@@ -67,11 +67,12 @@ void GPIO_Init(GPIO_Handle_t* pGPIOHandle){
 	pGPIOHandle -> pGPIOx-> PUPDR |= temp;
 
 	//Output type
-	temp = 0;
-	temp = (pGPIOHandle -> GPIO_PinCfg.GPIO_PinOType << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
-	pGPIOHandle -> pGPIOx-> OTYPER &= ~(1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
-	pGPIOHandle -> pGPIOx-> OTYPER |= temp;
-
+	if(pGPIOHandle -> GPIO_PinCfg.GPIO_PinMode == GPIO_MODE_OUT){
+		temp = 0;
+		temp = (pGPIOHandle -> GPIO_PinCfg.GPIO_PinOType << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
+		pGPIOHandle -> pGPIOx-> OTYPER &= ~(1 << pGPIOHandle -> GPIO_PinCfg.GPIO_PinNum);
+		pGPIOHandle -> pGPIOx-> OTYPER |= temp;
+	}
 	//Alternate functionality
 	temp = 0;
 	if(pGPIOHandle -> GPIO_PinCfg.GPIO_PinMode == GPIO_MODE_AF){ //Only if the pin mode is alternate function
